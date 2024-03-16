@@ -1,0 +1,329 @@
+definitions:
+  CreateUser:
+    description: CreateUser
+    properties:
+      name:
+        type: string
+    type: object
+  Update:
+    description: UpdateUser Information
+    properties:
+      name:
+        type: string
+    type: object
+  User:
+    description: UserModel
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  api.ClassScheduler:
+    properties:
+      capacity:
+        type: integer
+      end_date:
+        type: string
+      name:
+        type: string
+      start_date:
+        type: string
+    type: object
+  api.ReadClass:
+    properties:
+      capacity:
+        type: integer
+      date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      num_registrations:
+        type: integer
+    type: object
+  api.UpdateClass:
+    properties:
+      capacity:
+        type: integer
+      date:
+        type: string
+      name:
+        type: string
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      error:
+        properties:
+          code:
+            type: integer
+          details:
+            type: string
+          message:
+            additionalProperties:
+              type: string
+            type: object
+          path:
+            type: string
+          suggestion:
+            type: string
+          timestamp:
+            type: string
+        type: object
+    type: object
+  utils.Error:
+    properties:
+      code:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: jfolgado94@gmail.com
+    name: Joao Folgado
+    url: https://github.com/Flgado
+  description: '"App to book"'
+  version: "1"
+paths:
+  /v1/fitnessstudio/classes:
+    get:
+      description: Returns a list of classes optionally filtered by various parameters.
+        If no filters as pass returns all classes.
+      parameters:
+      - description: Filter by class name
+        in: query
+        name: class_name
+        type: string
+      - description: 'Filter classes with start date greater than or equal to the
+          specified date. Format: RFC3339'
+        in: query
+        name: start_date
+        type: string
+      - description: 'Filter classes with end date less than or equal to the specified
+          date. Format: RFC3339'
+        in: query
+        name: end_date
+        type: string
+      - description: Filter classes with capacity greater than or equal to the specified
+          value
+        in: query
+        name: capacity_gte
+        type: integer
+      - description: Filter classes with capacity less than or equal to the specified
+          value
+        in: query
+        name: capacity_le
+        type: integer
+      - description: Filter classes with number of registrations greater than or equal
+          to the specified value
+        in: query
+        name: num_registrations_gte
+        type: integer
+      - description: Filter classes with number of registrations less than or equal
+          to the specified value
+        in: query
+        name: num_registrations_le
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            items:
+              $ref: '#/definitions/api.ReadClass'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get classes with optional filters
+      tags:
+      - Classes
+    post:
+      consumes:
+      - application/json
+      description: Adds a new class with the provided details.
+      parameters:
+      - description: Class details (all fields are required)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.ClassScheduler'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Class added successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing required fields
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Add a new class
+      tags:
+      - Classes
+  /v1/fitnessstudio/classes/{class-id}:
+    get:
+      description: Get a class by ID
+      parameters:
+      - description: class ID
+        in: path
+        name: classId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ReadClass'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Classes
+    post:
+      description: Update a Class
+      parameters:
+      - description: Class ID
+        in: path
+        name: classId
+        required: true
+        type: integer
+      - description: Class data to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateClass'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Classes
+  /v1/fitnessstudio/users:
+    get:
+      description: Get all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Users
+    post:
+      description: Create a new user
+      parameters:
+      - description: User data to create
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Users
+  /v1/fitnessstudio/users/{user-id}:
+    get:
+      description: Get a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: user-id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Users
+    post:
+      description: Update a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: User data to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/Update'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Users
+swagger: "2.0"

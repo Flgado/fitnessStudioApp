@@ -1,0 +1,11 @@
+postgres:
+  PostgresqlHost: localhost
+  PostgresqlPort: 5432
+  PostgresqlUser: postgres
+  PostgresqlPassword: postgres
+  PostgresqlDbname: FitnessStudio
+  PostgresqlSslmode: false
+  PgDriver: postgres
+
+server:
+  Port: 8080

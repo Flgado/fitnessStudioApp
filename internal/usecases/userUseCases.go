@@ -2,9 +2,13 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"net/http"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
 	"github.com/Flgado/fitnessStudioApp/internal/database/users"
+	"github.com/Flgado/fitnessStudioApp/utils"
 )
 
 type UserUseCases interface {
@@ -19,7 +23,7 @@ type userUseCases struct {
 	writeRep users.WriteRepository
 }
 
-func NewGetAllUserUseCase(readRep users.ReadRepository, writeRepo users.WriteRepository) UserUseCases {
+func NewUserUseCase(readRep users.ReadRepository, writeRepo users.WriteRepository) UserUseCases {
 	return &userUseCases{
 		readRep:  readRep,
 		writeRep: writeRepo,
@@ -31,7 +35,22 @@ func (u *userUseCases) GetAllUsers(ctx context.Context) ([]api.User, error) {
 }
 
 func (u *userUseCases) GetUserById(ctx context.Context, userId int) (api.User, error) {
-	return u.readRep.GetById(ctx, userId)
+
+	user, err := u.readRep.GetById(ctx, userId)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return api.User{}, utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "User Not Found"},
+				"The specified user does not exist.",
+				"Please provide a valid class ID.")
+		}
+
+		return api.User{}, err
+	}
+
+	return user, err
 }
 
 func (u *userUseCases) CreateUser(ctx context.Context, userName string) error {
@@ -39,5 +58,17 @@ func (u *userUseCases) CreateUser(ctx context.Context, userName string) error {
 }
 
 func (u *userUseCases) UpdateUser(ctx context.Context, user api.User) (int64, error) {
-	return u.writeRep.Update(ctx, user)
+	ur, err := u.writeRep.Update(ctx, user)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "User Not Found"},
+				"The specified user does not exist. Unable to update.",
+				"Please provide a valid user ID.")
+		}
+
+		return 0, err
+	}
+	return ur, err
 }

@@ -10,7 +10,7 @@ const (
 
 	findUserByName = `SELECT *
 						From users
-						Where name = ?`
+						Where name = $1`
 
 	AddUserRow = `INSERT INTO users (user_name) VALUES(:user_name)`
 

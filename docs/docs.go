@@ -19,9 +19,136 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/fitnessstudio/classes": {
+        "/v1/fitnessstudio/bookings/classes/{classId}/users": {
             "get": {
                 "description": "Returns a list of classes optionally filtered by various parameters. If no filters as pass returns all classes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get classes booked by user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Class Id",
+                        "name": "classId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/api.UsersBooked"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/fitnessstudio/bookings/reserve": {
+            "post": {
+                "description": "Make class reservation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "parameters": [
+                    {
+                        "description": "Reservation body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.MakeRegervation"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/fitnessstudio/bookings/users/{userId}/classes": {
+            "get": {
+                "description": "Returns a list of classes optionally filtered by various parameters. If no filters as pass returns all classes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get classes booked by user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/api.ClassBooked"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/fitnessstudio/classes": {
+            "get": {
+                "description": "Returns a list of classes, optionally filtered by various parameters. If no filters are passed, it returns all classes.",
                 "produces": [
                     "application/json"
                 ],
@@ -98,7 +225,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Adds a new class with the provided details.",
+                "description": "Adds new classes with the provided details.",
                 "consumes": [
                     "application/json"
                 ],
@@ -108,7 +235,7 @@ const docTemplate = `{
                 "tags": [
                     "Classes"
                 ],
-                "summary": "Add a new class",
+                "summary": "Create multiple classes.",
                 "parameters": [
                     {
                         "description": "Class details (all fields are required)",
@@ -122,21 +249,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Class added successfully",
+                        "description": "message\": \"All Classes Created With Success\", \"Not Possible To Scheduler\": array\u003capi.Class\u003e}",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "400": {
-                        "description": "Invalid request body or missing required fields",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -154,8 +281,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "class ID",
-                        "name": "classId",
+                        "description": "Class ID",
+                        "name": "class-id",
                         "in": "path",
                         "required": true
                     }
@@ -170,7 +297,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.Error"
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
@@ -182,7 +315,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Update a Class",
+                "description": "Update class.",
                 "produces": [
                     "application/json"
                 ],
@@ -193,7 +326,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Class ID",
-                        "name": "classId",
+                        "name": "class-id",
                         "in": "path",
                         "required": true
                     },
@@ -213,6 +346,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
@@ -274,12 +419,15 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CreateUser"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
@@ -322,6 +470,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -342,7 +496,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "userId",
+                        "name": "user-id",
                         "in": "path",
                         "required": true
                     },
@@ -366,6 +520,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -380,18 +540,26 @@ const docTemplate = `{
         "CreateUser": {
             "description": "CreateUser",
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50
                 }
             }
         },
         "Update": {
             "description": "UpdateUser Information",
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50
                 }
             }
         },
@@ -407,8 +575,30 @@ const docTemplate = `{
                 }
             }
         },
+        "api.ClassBooked": {
+            "type": "object",
+            "properties": {
+                "class_date": {
+                    "type": "string"
+                },
+                "class_id": {
+                    "type": "integer"
+                },
+                "class_name": {
+                    "type": "string"
+                },
+                "reserved_date": {
+                    "type": "string"
+                }
+            }
+        },
         "api.ClassScheduler": {
             "type": "object",
+            "required": [
+                "end_date",
+                "name",
+                "start_date"
+            ],
             "properties": {
                 "capacity": {
                     "type": "integer"
@@ -417,10 +607,22 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50
                 },
                 "start_date": {
                     "type": "string"
+                }
+            }
+        },
+        "api.MakeRegervation": {
+            "type": "object",
+            "properties": {
+                "class_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -454,6 +656,21 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "api.UsersBooked": {
+            "type": "object",
+            "properties": {
+                "class_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
                     "type": "string"
                 }
             }
@@ -486,14 +703,6 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                }
-            }
-        },
-        "utils.Error": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
                 }
             }
         }

@@ -29,8 +29,8 @@ func NewReadRepository(db *sqlx.DB) ReadRepository {
 // It returns a slice of api.ReadClass structs representing the retrieved classes and nil error if successful.
 // If there is an issue retrieving the classes from the database, it returns nil slice and an error describing the issue.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param filters api.ClasseFilters - Struct containing optional filtering parameters for classes.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: filters api.ClasseFilters - Struct containing optional filtering parameters for classes.
 //
 // @return []api.ReadClass - Slice of ReadClass structs representing the retrieved classes.
 // @return error - Error if there is an issue retrieving the classes from the database.
@@ -103,10 +103,9 @@ func (r *repository) List(ctx context.Context, filters api.ClasseFilters) ([]api
 
 func (r *repository) GetById(ctx context.Context, classId int) (api.ReadClass, error) {
 	cr := ClassRow{}
-
 	row := r.db.QueryRowContext(ctx, findClassById, classId)
 
-	err := row.Scan(cr)
+	err := row.Scan(&cr.Id, &cr.Name, &cr.Date, &cr.Capacity, &cr.NumRegistrations, &cr.CreateDate, &cr.LastUpdateDate)
 
 	if err != nil {
 		return api.ReadClass{}, err
@@ -121,6 +120,7 @@ func (r *repository) GetById(ctx context.Context, classId int) (api.ReadClass, e
 		},
 		NumRegistrations: cr.NumRegistrations,
 	}
+
 	return readClass, nil
 }
 

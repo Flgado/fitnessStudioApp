@@ -19,10 +19,10 @@ import (
 // If any parameter fails to parse, it returns an empty api.ClasseFilters struct
 // and an error describing the issue.
 //
-// @param urlValues url.Values - URL query parameters.
+// param urlValues url.Values - URL query parameters.
 //
-// @return api.ClasseFilters - Populated struct containing class filters.
-// @return error - Error if any parameter fails to parse.
+// return api.ClasseFilters - Populated struct containing class filters.
+// return error - Error if any parameter fails to parse.
 func buildClassFilters(urlValues url.Values) (api.ClasseFilters, error) {
 	filters := api.ClasseFilters{
 		Name: urlValues.Get("class_name"),
@@ -91,22 +91,14 @@ func buildClassFilters(urlValues url.Values) (api.ClasseFilters, error) {
 // the name of the parameter, and constructs a formatted error response.
 // It returns a utils.Error struct with appropriate status code, message, and details.
 //
-// @param e error - Error describing the failure to parse a parameter.
-// @param p string - Name of the parameter that failed to parse.
+// param e error - Error describing the failure to parse a parameter.
+// param p string - Name of the parameter that failed to parse.
 //
-// @return utils.Error - Formatted error response.
+// return utils.Error - Formatted error response.
 func buildFormatParameterError(e error, p string) utils.Error {
 	return utils.E(http.StatusBadRequest,
 		e,
 		map[string]string{"message": "Wrong parameter pass"},
 		fmt.Sprintf("Wrong parameter pass as %s", p),
 		"Use the right parameter value. Read documentation for more details")
-}
-
-func buildError(e error, m string, s string) utils.Error {
-	return utils.E(http.StatusBadRequest,
-		e,
-		map[string]string{"message": m},
-		"",
-		s)
 }

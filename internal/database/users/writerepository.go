@@ -22,7 +22,6 @@ func (r *repository) Add(ctx context.Context, user api.UpdateUser) error {
 	}
 
 	_, err := r.db.NamedExecContext(ctx, AddUserRow, ur)
-
 	if err != nil {
 		return err
 	}
@@ -31,19 +30,19 @@ func (r *repository) Add(ctx context.Context, user api.UpdateUser) error {
 }
 
 func (r *repository) Update(ctx context.Context, user api.User) (int64, error) {
-	ur := api.UpdateUser{}
+	u := UserRow{}
 
 	row := r.db.QueryRowContext(ctx, findUserById, user.Id)
 
-	err := row.Scan(ur)
+	err := row.Scan(&u.Id, &u.Name, &u.CreateDate, &u.LastUpdateDate)
 
 	if err != nil {
 		return 0, err
 	}
 
-	ur.Name = user.Name
+	u.Name = user.Name
 
-	rl, err := r.db.NamedExecContext(ctx, UpdateUser, ur)
+	rl, err := r.db.NamedExecContext(ctx, UpdateUser, u)
 	if err != nil {
 		return 0, err
 	}

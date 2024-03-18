@@ -11,3 +11,19 @@ run-migration: docker-up
 	go build -o cmd/sqlmigrations/main ./cmd/sqlmigrations/main.go
 	@echo "Running migration..."
 	./cmd/sqlmigrations/main
+	@echo "Build application"
+	go build -o main main.go
+	@echo "Start application"
+	./main
+	
+run-unittests:
+	@echo "Running unit tests..."
+	go test ./... --tags=unittests -v | grep -v "no test files"
+
+
+run-integrationtests:
+	@echo "Running integration tests..."
+	go test ./... --tags=integrationtests -v | grep -v "no test files"
+
+run-alltests: run-unittests run-integrationtests 
+	@echo "All tests have been run."

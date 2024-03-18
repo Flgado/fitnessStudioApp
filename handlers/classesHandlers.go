@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
 	"github.com/Flgado/fitnessStudioApp/internal/usecases"
+	"github.com/Flgado/fitnessStudioApp/utils"
 	"github.com/go-chi/chi"
 )
 
@@ -21,7 +21,7 @@ func NewClassesHandler(uc usecases.ClassesUseCases) *ClassesHandler {
 
 // HandlerGetClasses handles the HTTP request to get classes with optional filters.
 // @Summary Get classes with optional filters
-// @Description Returns a list of classes optionally filtered by various parameters. If no filters as pass returns all classes.
+// @Description Returns a list of classes, optionally filtered by various parameters. If no filters are passed, it returns all classes.
 // @Tags Classes
 // @Produce json
 // @Param class_name query string false "Filter by class name"
@@ -37,7 +37,6 @@ func NewClassesHandler(uc usecases.ClassesUseCases) *ClassesHandler {
 // @Router /v1/fitnessstudio/classes [get]
 func (h ClassesHandler) HandlerGetClasses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	queryParams := r.URL.Query()
 
 	// Create filter object
@@ -56,23 +55,29 @@ func (h ClassesHandler) HandlerGetClasses(w http.ResponseWriter, r *http.Request
 }
 
 // HandlerAddClass handles the HTTP request to add a new class.
-// @Summary Add a new class
-// @Description Adds a new class with the provided details.
+// @Summary Create multiple classes.
+// @Description Adds new classes with the provided details.
 // @Tags Classes
 // @Accept json
 // @Produce json
 // @Param body body api.ClassScheduler true "Class details (all fields are required)"
-// @Success 200 {string} string "Class added successfully"
-// @Failure 400 {string} string "Invalid request body or missing required fields"
-// @Failure 500 {string} string "Internal Server Error"
+// @Success 200 {string} map[string]interface{}{"message": "All Classes Created With Success", "Not Possible To Scheduler": array<api.Class>}
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /v1/fitnessstudio/classes [post]
 func (h ClassesHandler) HandlerAddClass(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var addClass api.ClassScheduler
 	err := json.NewDecoder(r.Body).Decode(&addClass)
 	if err != nil {
-		e := buildError(err, "Wrong request", "Refer to our documentation at xx")
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"Request body not expected",
+			"Read our documentation for more details")
+
 		responseWithErrors(w, *r, e)
+		return
 	}
 
 	// returned classes that was not possible to sheduler
@@ -80,51 +85,73 @@ func (h ClassesHandler) HandlerAddClass(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		responseWithErrors(w, *r, err)
+		return
 	}
 
-	respondWithJson(w, http.StatusOK, c)
+	if c != nil {
+		respondWithJson(w, http.StatusOK, map[string][]api.Class{"Not Possible To Scheduler": c})
+		return
+	}
+
+	respondWithJson(w, http.StatusOK, map[string]string{"message": "All Classes Created With Success"})
 }
 
 // HandlerUpdateClass handles the HTTP request to update a class.
-// @Description Update a Class
+// @Description Update class.
 // @Tags Classes
 // @Produce json
-// @Param classId path int true "Class ID"
+// @Param class-id path int true "Class ID"
 // @Param request body api.UpdateClass true "Class data to update"
 // @Success 200
 // @Failure 400 {object} ErrorResponse
+// @Failure 422 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/fitnessstudio/classes/{class-id} [post]
 func (h ClassesHandler) HandlerUpdateClass(w http.ResponseWriter, r *http.Request) {
 	classIdStr := chi.URLParam(r, "class-id")
 	classId, err := strconv.Atoi(classIdStr)
 	if err != nil {
-		responseWithError(w, http.StatusBadRequest, "Invalid classIdStrId")
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"Id with invalid format",
+			"class id should be an integer")
+
+		responseWithErrors(w, *r, e)
 		return
 	}
 
 	var updateClass api.UpdateClass
 	err = json.NewDecoder(r.Body).Decode(&updateClass)
 	if err != nil {
-		responseWithError(w, http.StatusBadRequest, "Invalid request")
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"Request body not expected",
+			"Read our documentation for more details")
+
+		responseWithErrors(w, *r, e)
+		return
 	}
 
-	u, err := h.uc.UpdateClass(r.Context(), updateClass, classId)
+	_, err = h.uc.UpdateClass(r.Context(), updateClass, classId)
 	if err != nil {
-		// TODO: Deal for example with no class exist !!
-		responseWithError(w, http.StatusInternalServerError, "Invalid request")
+		responseWithErrors(w, *r, err)
+		return
 	}
 
-	responseWithError(w, http.StatusOK, fmt.Sprintf("Updated class %v", u))
+	respondWithJson(w, http.StatusOK, map[string]string{"message": "Class Succesfull updated"})
 }
 
 // HandlerGetClassById handles the HTTP request to get a class by ID.
 // @Description Get a class by ID
 // @Tags Classes
 // @Produce json
-// @Param classId path int true "class ID"
+// @Param class-id path int true "Class ID"
 // @Success 200 {object} api.ReadClass
-// @Failure 400 {object} utils.Error
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /v1/fitnessstudio/classes/{class-id} [get]
 func (h ClassesHandler) HandlerGetClassById(w http.ResponseWriter, r *http.Request) {
@@ -133,13 +160,19 @@ func (h ClassesHandler) HandlerGetClassById(w http.ResponseWriter, r *http.Reque
 
 	classId, err := strconv.Atoi(classIdStr)
 	if err != nil {
-		responseWithError(w, http.StatusBadRequest, "Invalid classId")
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"Request body not expected",
+			"Read our documentation for more details")
+
+		responseWithErrors(w, *r, e)
 		return
 	}
 
 	class, err := h.uc.GetClassById(ctx, classId)
 	if err != nil {
-		responseWithError(w, 500, err.Error())
+		responseWithErrors(w, *r, err)
 		return
 	}
 

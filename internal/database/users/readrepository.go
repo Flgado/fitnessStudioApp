@@ -2,13 +2,8 @@ package users
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"log"
-	"net/http"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
-	"github.com/Flgado/fitnessStudioApp/utils"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -66,18 +61,9 @@ func (r *repository) GetById(ctx context.Context, userId int) (api.User, error) 
 	u := UserRow{}
 
 	row := r.db.QueryRowContext(ctx, findUserById, userId)
-
-	err := row.Scan(u)
+	err := row.Scan(&u.Id, &u.Name, &u.CreateDate, &u.LastUpdateDate)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return api.User{}, utils.E(http.StatusNotFound, err, map[string]string{
-				"message": "The requested resource was not found."},
-				fmt.Sprintf("The user with the ID %d does not exist in our records.", userId),
-				"Please check if the user ID is correct")
-		}
-
-		log.Println(err)
 		return api.User{}, err
 	}
 
@@ -85,6 +71,7 @@ func (r *repository) GetById(ctx context.Context, userId int) (api.User, error) 
 		Id:   u.Id,
 		Name: u.Name,
 	}
+
 	return readUser, nil
 }
 

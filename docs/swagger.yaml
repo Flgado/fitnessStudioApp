@@ -3,13 +3,19 @@ definitions:
     description: CreateUser
     properties:
       name:
+        maxLength: 50
         type: string
+    required:
+    - name
     type: object
   Update:
     description: UpdateUser Information
     properties:
       name:
+        maxLength: 50
         type: string
+    required:
+    - name
     type: object
   User:
     description: UserModel
@@ -19,6 +25,17 @@ definitions:
       name:
         type: string
     type: object
+  api.ClassBooked:
+    properties:
+      class_date:
+        type: string
+      class_id:
+        type: integer
+      class_name:
+        type: string
+      reserved_date:
+        type: string
+    type: object
   api.ClassScheduler:
     properties:
       capacity:
@@ -26,9 +43,21 @@ definitions:
       end_date:
         type: string
       name:
+        maxLength: 50
         type: string
       start_date:
         type: string
+    required:
+    - end_date
+    - name
+    - start_date
+    type: object
+  api.MakeRegervation:
+    properties:
+      class_id:
+        type: integer
+      user_id:
+        type: integer
     type: object
   api.ReadClass:
     properties:
@@ -50,6 +79,16 @@ definitions:
       date:
         type: string
       name:
+        maxLength: 50
+        type: string
+    type: object
+  api.UsersBooked:
+    properties:
+      class_id:
+        type: integer
+      user_id:
+        type: integer
+      user_name:
         type: string
     type: object
   handlers.ErrorResponse:
@@ -72,11 +111,6 @@ definitions:
             type: string
         type: object
     type: object
-  utils.Error:
-    properties:
-      code:
-        type: integer
-    type: object
 host: localhost:8080
 info:
   contact:
@@ -86,10 +120,95 @@ info:
   description: '"App to book"'
   version: "1"
 paths:
-  /v1/fitnessstudio/classes:
+  /v1/fitnessstudio/bookings/classes/{classId}/users:
     get:
       description: Returns a list of classes optionally filtered by various parameters.
         If no filters as pass returns all classes.
+      parameters:
+      - description: Class Id
+        in: path
+        name: classId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/api.UsersBooked'
+              type: array
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get classes booked by user
+      tags:
+      - Bookings
+  /v1/fitnessstudio/bookings/reserve:
+    post:
+      description: Make class reservation
+      parameters:
+      - description: Reservation body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.MakeRegervation'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      tags:
+      - Bookings
+  /v1/fitnessstudio/bookings/users/{userId}/classes:
+    get:
+      description: Returns a list of classes optionally filtered by various parameters.
+        If no filters as pass returns all classes.
+      parameters:
+      - description: User ID
+        in: path
+        name: user-id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/api.ClassBooked'
+              type: array
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get classes booked by user
+      tags:
+      - Bookings
+  /v1/fitnessstudio/classes:
+    get:
+      description: Returns a list of classes, optionally filtered by various parameters.
+        If no filters are passed, it returns all classes.
       parameters:
       - description: Filter by class name
         in: query
@@ -148,7 +267,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Adds a new class with the provided details.
+      description: Adds new classes with the provided details.
       parameters:
       - description: Class details (all fields are required)
         in: body
@@ -160,27 +279,28 @@ paths:
       - application/json
       responses:
         "200":
-          description: Class added successfully
+          description: 'message": "All Classes Created With Success", "Not Possible
+            To Scheduler": array<api.Class>}'
           schema:
             type: string
         "400":
-          description: Invalid request body or missing required fields
+          description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            type: string
-      summary: Add a new class
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create multiple classes.
       tags:
       - Classes
   /v1/fitnessstudio/classes/{class-id}:
     get:
       description: Get a class by ID
       parameters:
-      - description: class ID
+      - description: Class ID
         in: path
-        name: classId
+        name: class-id
         required: true
         type: integer
       produces:
@@ -193,7 +313,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/utils.Error'
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -201,11 +325,11 @@ paths:
       tags:
       - Classes
     post:
-      description: Update a Class
+      description: Update class.
       parameters:
       - description: Class ID
         in: path
-        name: classId
+        name: class-id
         required: true
         type: integer
       - description: Class data to update
@@ -221,6 +345,14 @@ paths:
           description: OK
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":
@@ -261,10 +393,12 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/CreateUser'
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -291,6 +425,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -302,7 +440,7 @@ paths:
       parameters:
       - description: User ID
         in: path
-        name: userId
+        name: user-id
         required: true
         type: integer
       - description: User data to update
@@ -318,6 +456,10 @@ paths:
           description: OK
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":

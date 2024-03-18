@@ -17,12 +17,13 @@ func BuildClassesRoutes(dbPoll *sqlx.DB) *chi.Mux {
 	// usecases
 	uc := usecases.NewClassesUseCases(readRepo, wrRepo)
 
+	// handler
 	h := handlers.NewClassesHandler(uc)
 	cRouter := chi.NewRouter()
 	cRouter.Get("/", h.HandlerGetClasses)
-	cRouter.Get("/{classId}", h.HandlerGetClassById)
+	cRouter.Get("/{class-id}", h.HandlerGetClassById)
 	cRouter.Post("/", h.HandlerAddClass)
-	cRouter.Post("/{classId}", h.HandlerUpdateClass)
+	cRouter.Post("/{class-id}", h.HandlerUpdateClass)
 
 	return cRouter
 }

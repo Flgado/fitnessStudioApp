@@ -2,13 +2,16 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
 	"github.com/Flgado/fitnessStudioApp/internal/database/classes"
+	"github.com/Flgado/fitnessStudioApp/utils"
 )
 
 type reservedDaysInfo struct {
@@ -43,8 +46,8 @@ func NewClassesUseCases(readRepo classes.ReadRepository, wrRepo classes.WriteRep
 // It returns a slice of api.ReadClass structs representing the filtered classes and nil error if successful.
 // If there is an issue retrieving the filtered classes, it returns an empty slice and an error describing the issue.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param filters api.ClasseFilters - Struct containing optional filtering parameters for classes.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: filters api.ClasseFilters - Struct containing optional filtering parameters for classes.
 //
 // @return []api.ReadClass - Slice of ReadClass structs representing the filtered classes.
 // @return error - Error if there is an issue retrieving the filtered classes.
@@ -52,8 +55,33 @@ func (c *classesUseCases) GetFilteredClasses(ctx context.Context, filters api.Cl
 	return c.readRep.List(ctx, filters)
 }
 
+// GetClassById retrieves a class by its unique identifier.
+//
+// This method takes a context.Context object for managing the lifecycle of the request
+// and an integer representing the ID of the class to retrieve.
+// It returns a api.ReadClass struct representing the class if found and nil error.
+// If the class with the specified ID does not exist, it returns an error with a HTTP 404 status code.
+// If there is an issue retrieving the class, it returns an empty api.ReadClass struct and an error describing the issue.
+//
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: classId int - ID of the class to retrieve.
+//
+// @return api.ReadClass - ReadClass struct representing the class.
+// @return error - Error if there is an issue retrieving the class.
 func (c *classesUseCases) GetClassById(ctx context.Context, classId int) (api.ReadClass, error) {
-	return c.readRep.GetById(ctx, classId)
+	class, err := c.readRep.GetById(ctx, classId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return api.ReadClass{}, utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "Class Not Found"},
+				"The specified class does not exist. Unable to update.",
+				"Please provide a valid class ID.")
+		}
+		return api.ReadClass{}, err
+	}
+
+	return class, nil
 }
 
 // CreateClass creates classes based on the provided class scheduler and adds them to the repository.
@@ -64,32 +92,39 @@ func (c *classesUseCases) GetClassById(ctx context.Context, classId int) (api.Re
 // It returns a slice of api.Class structs representing the classes that could not be scheduled
 // due to unavailability or errors, and nil error if successful.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param classScheduler api.ClassScheduler - Struct containing details about the classes to be created.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: classScheduler api.ClassScheduler - Struct containing details about the classes to be created.
 //
 // @return []api.Class - Slice of Class structs representing the classes that could not be scheduled.
 // @return error - Error if there is an issue scheduling the classes.
 func (c *classesUseCases) CreateClass(ctx context.Context, classScheduler api.ClassScheduler) ([]api.Class, error) {
 	sc := separateClassByYearMonth(classScheduler)
-	var notPossibleScheduler []api.Class
+	var notPossibleSchedulerReport []api.Class
 	for key, classList := range sc {
 
-		possibleScheduler, notPossibleScheduler, err := c.getAvailableDays(key, classList)
+		possibleScheduler, impossibleToSheduler, err := c.getAvailableDays(key, classList)
 
+		if len(impossibleToSheduler) != 0 {
+			notPossibleSchedulerReport = append(notPossibleSchedulerReport, impossibleToSheduler...)
+		}
 		if err != nil {
-			return append(possibleScheduler, notPossibleScheduler...), err
+			// all classes cannot be scheduler
+			return append(possibleScheduler, notPossibleSchedulerReport...), err
 		}
 
-		err = c.wrRep.Add(ctx, possibleScheduler)
+		if len(possibleScheduler) != 0 {
+			err = c.wrRep.Add(ctx, possibleScheduler)
+		}
 
 		if err != nil {
 			// Remove the values from the cache if something went wrong in the repository
 			_ = c.removeDaysFromCache(key, possibleScheduler)
-			return append(possibleScheduler, notPossibleScheduler...), err
+			// all classes cannot be scheduler
+			return append(possibleScheduler, notPossibleSchedulerReport...), err
 		}
 	}
 
-	return notPossibleScheduler, nil
+	return notPossibleSchedulerReport, nil
 }
 
 // UpdateClass updates the details of a class with the provided information.
@@ -101,32 +136,50 @@ func (c *classesUseCases) CreateClass(ctx context.Context, classScheduler api.Cl
 // and if the updated capacity can be set, and then updates the class in the repository.
 // It returns the number of rows affected by the update operation and nil error if successful.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param updateClass api.UpdateClass - Struct containing the updated details of the class.
-// @param classId int - ID of the class to be updated.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: updateClass api.UpdateClass - Struct containing the updated details of the class.
+// param: classId int - ID of the class to be updated.
 //
 // @return int64 - Number of rows affected by the update operation.
 // @return error - Error if there is an issue updating the class.
 func (c *classesUseCases) UpdateClass(ctx context.Context, updateClass api.UpdateClass, classId int) (int64, error) {
 
 	if updateClass.Date != nil && updateClass.Date.Before(time.Now()) {
-		return 0, errors.New("date cannot be in the pass")
+		return 0, utils.E(http.StatusUnprocessableEntity,
+			nil,
+			map[string]string{"message": "Status Unprocessabe Entity"},
+			"New Date cannot be in the pass",
+			"Please select a valid day")
 	}
 
-	key := fmt.Sprintf("%d-%02d", updateClass.Date.Year(), updateClass.Date.Month())
+	_, err := c.readRep.GetById(ctx, classId)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "Class Not Found"},
+				"The specified class does not exist. Unable to update.",
+				"Please provide a valid class ID.")
+		}
+
+		return 0, err
+	}
 
 	if updateClass.Date != nil {
+		// Validate in cache if day is availabe
+		key := fmt.Sprintf("%d-%02d", updateClass.Date.Year(), updateClass.Date.Month())
+
 		isAvailable := c.isDayAvailable(key, *updateClass.Date)
 		if !isAvailable {
-			return 0, nil
+			return 0, utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "Date already reserved"},
+				"The selected date is already reserved.",
+				"Please choose a different date or class.")
 		}
 	}
 
-	if updateClass.Capacity == nil {
-		return c.wrRep.Update(ctx, classId, updateClass)
-	}
-
-	// TODO:: LOCK IG CAPACITY IS NOT EMPTY THIS MEANS THAT IS BEING SET!
 	return c.wrRep.Update(ctx, classId, updateClass)
 }
 
@@ -137,8 +190,8 @@ func (c *classesUseCases) UpdateClass(ctx context.Context, updateClass api.Updat
 // It removes the reserved days associated with the provided classes from the cache.
 // It returns nil if the operation is successful.
 //
-// @param key string - Key representing the month (e.g., "2024-03").
-// @param classList []api.Class - Slice of Class structs representing the classes.
+// param: key string - Key representing the month (e.g., "2024-03").
+// param: classList []api.Class - Slice of Class structs representing the classes.
 //
 // @return error - Error if there is an issue removing reserved days from the cache.
 func (c *classesUseCases) removeDaysFromCache(key string, classList []api.Class) error {
@@ -173,8 +226,8 @@ func (c *classesUseCases) removeDaysFromCache(key string, classList []api.Class)
 // It checks if the provided day is already reserved and returns true if it is available,
 // otherwise returns false.
 //
-// @param key string - Key representing the month (e.g., "2024-03").
-// @param date time.Time - Date to be checked for availability.
+// param: key string - Key representing the month (e.g., "2024-03").
+// param: date time.Time - Date to be checked for availability.
 //
 // @return bool - True if the day is available, false otherwise.
 func (c *classesUseCases) isDayAvailable(key string, date time.Time) bool {
@@ -209,8 +262,8 @@ func (c *classesUseCases) isDayAvailable(key string, date time.Time) bool {
 // and a slice of classes that could not be scheduled due to unavailability.
 // It returns nil error if successful.
 //
-// @param key string - Key representing the month (e.g., "2024-03").
-// @param classList []api.Class - Slice of Class structs representing the classes to be scheduled.
+// param: key string - Key representing the month (e.g., "2024-03").
+// param: classList []api.Class - Slice of Class structs representing the classes to be scheduled.
 //
 // @return []api.Class - Slice of available Class structs.
 // @return []api.Class - Slice of unavailable Class structs.
@@ -224,7 +277,6 @@ func (c *classesUseCases) getAvailableDays(key string, classList []api.Class) ([
 	info.mu.Lock()
 	defer info.mu.Unlock()
 
-	// Create a map of reserved days for constant-time lookup
 	reservedMap := make(map[int]struct{})
 	for _, day := range info.days {
 		reservedMap[day.Day()] = struct{}{}
@@ -260,7 +312,7 @@ func (c *classesUseCases) getAvailableDays(key string, classList []api.Class) ([
 // and the values are slices of api.Class representing the classes scheduled for each month.
 // It returns the map containing the separated classes.
 //
-// @param base api.ClassScheduler - Struct containing details about the classes to be scheduled.
+// param: base api.ClassScheduler - Struct containing details about the classes to be scheduled.
 //
 // @return map[string][]api.Class - Map where keys represent year and month, and values represent scheduled classes.
 func separateClassByYearMonth(base api.ClassScheduler) map[string][]api.Class {
@@ -278,19 +330,4 @@ func separateClassByYearMonth(base api.ClassScheduler) map[string][]api.Class {
 	}
 
 	return datesMap
-}
-
-// TODO: lock if class have newClassCapacity Set
-func (c *classesUseCases) capacityCanBeSet(ctx context.Context, newClassCapacity int, classId int) (bool, error) {
-
-	cr, err := c.readRep.GetClassReservations(ctx, classId)
-
-	if err != nil {
-		return false, err
-	}
-	if newClassCapacity > cr {
-		return false, nil
-	}
-
-	return true, nil
 }

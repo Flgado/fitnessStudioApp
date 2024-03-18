@@ -1,13 +1,20 @@
+//go:build unittests
+// +build unittests
+
 package usecases
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"testing"
 	"time"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // MockWriteRepository is a mock implementation of WriteRepository for testing purposes.
@@ -28,7 +35,156 @@ func (m *MockWriteRepository) Update(ctx context.Context, classId int, classUpda
 	return 2, nil
 }
 
-func TestClassesUseCases_CreateClass(t *testing.T) {
+type mockClassesReadRepository struct {
+	mock.Mock
+}
+type ReadRepository interface {
+	List(ctx context.Context, filters api.ClasseFilters) ([]api.ReadClass, error)
+	GetById(ctx context.Context, classId int) (api.ReadClass, error)
+	GetClassReservations(ctx context.Context, classId int) (int, error)
+}
+
+func (m *mockClassesReadRepository) GetClassReservations(ctx context.Context, classId int) (int, error) {
+	return 0, nil
+}
+
+func (m *mockClassesReadRepository) List(ctx context.Context, filters api.ClasseFilters) ([]api.ReadClass, error) {
+	args := m.Called(ctx, filters)
+	return args.Get(0).([]api.ReadClass), args.Error(1)
+}
+
+func (m *mockClassesReadRepository) GetById(ctx context.Context, classId int) (api.ReadClass, error) {
+	args := m.Called(ctx, classId)
+	return args.Get(0).(api.ReadClass), args.Error(1)
+}
+
+type mockClassesWriteRepository struct {
+	mock.Mock
+}
+
+func (m *mockClassesWriteRepository) Add(ctx context.Context, classes []api.Class) error {
+	args := m.Called(ctx, classes)
+	return args.Error(0)
+}
+
+func (m *mockClassesWriteRepository) Update(ctx context.Context, classId int, updateClass api.UpdateClass) (int64, error) {
+	args := m.Called(ctx, classId, updateClass)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func TestCreateClass_Success(t *testing.T) {
+	mockReadRepo := new(mockClassesReadRepository)
+	mockWriteRepo := new(mockClassesWriteRepository)
+
+	uc := NewClassesUseCases(mockReadRepo, mockWriteRepo)
+
+	classScheduler := api.ClassScheduler{
+		Name:      "Test Class",
+		StartDate: time.Now(),
+		EndDate:   time.Now().AddDate(0, 0, 1),
+		Capacity:  10,
+	}
+
+	mockWriteRepo.On("Add", mock.Anything, mock.Anything).Return(nil)
+
+	classes, err := uc.CreateClass(context.Background(), classScheduler)
+
+	assert.NoError(t, err)
+	assert.Empty(t, classes)
+	mockWriteRepo.AssertExpectations(t)
+}
+
+func TestCreateClass_Error(t *testing.T) {
+	mockReadRepo := new(mockClassesReadRepository)
+	mockWriteRepo := new(mockClassesWriteRepository)
+
+	uc := NewClassesUseCases(mockReadRepo, mockWriteRepo)
+
+	classScheduler := api.ClassScheduler{
+		Name:      "Test Class",
+		StartDate: time.Now(),
+		EndDate:   time.Now().AddDate(0, 0, 1),
+		Capacity:  10,
+	}
+
+	mockWriteRepo.On("Add", mock.Anything, mock.Anything).Return(errors.New("error adding class"))
+
+	classes, err := uc.CreateClass(context.Background(), classScheduler)
+
+	expectedClasses := []api.Class{
+		{
+			Name:     classScheduler.Name,
+			Date:     classScheduler.StartDate,
+			Capacity: classScheduler.Capacity,
+		},
+		{
+			Name:     classScheduler.Name,
+			Date:     classScheduler.EndDate,
+			Capacity: classScheduler.Capacity,
+		},
+	}
+	// Sort the expected and actual classes by date
+	sort.Slice(classes, func(i, j int) bool {
+		return classes[i].Date.Before(classes[j].Date)
+	})
+	sort.Slice(expectedClasses, func(i, j int) bool {
+		return expectedClasses[i].Date.Before(expectedClasses[j].Date)
+	})
+
+	assert.EqualError(t, err, "error adding class")
+	mockWriteRepo.AssertExpectations(t)
+	assert.Equal(t, expectedClasses[0].Name, classes[0].Name)
+	compareDates(t, expectedClasses[0].Date, classes[0].Date)
+	// Validate that the sorted classes match the expected values for Name and Date fields
+
+	assert.Equal(t, expectedClasses[1].Name, classes[1].Name)
+	assert.Equal(t, expectedClasses[1].Name, classes[1].Name)
+}
+
+func compareDates(t *testing.T, expected, actual time.Time) {
+	expectedDate := time.Date(expected.Year(), expected.Month(), expected.Day(), 0, 0, 0, 0, time.UTC)
+	actualDate := time.Date(actual.Year(), actual.Month(), actual.Day(), 0, 0, 0, 0, time.UTC)
+	if !expectedDate.Equal(actualDate) {
+		t.Errorf("expected date %v, got %v", expectedDate, actualDate)
+	}
+}
+
+func TestCreateClass_FoundInCacheUnavailabeDay(t *testing.T) {
+	mockReadRepo := new(mockClassesReadRepository)
+	mockWriteRepo := new(mockClassesWriteRepository)
+
+	uc := NewClassesUseCases(mockReadRepo, mockWriteRepo)
+
+	classScheduler := api.ClassScheduler{
+		Name:      "Test Class",
+		StartDate: time.Now(),
+		EndDate:   time.Now().AddDate(0, 0, 1),
+		Capacity:  10,
+	}
+
+	mockWriteRepo.On("Add", mock.Anything, mock.Anything).Return(nil)
+
+	// will find all days available in cache
+	emptyList, err := uc.CreateClass(context.Background(), classScheduler)
+
+	classScheduler2 := api.ClassScheduler{
+		Name:      "Not found available day",
+		StartDate: time.Now(),
+		EndDate:   time.Now(),
+		Capacity:  10,
+	}
+
+	class, err2 := uc.CreateClass(context.Background(), classScheduler2)
+
+	assert.Empty(t, emptyList)
+	assert.Nil(t, err)
+	assert.Nil(t, err2)
+	assert.Len(t, class, 1)
+	assert.Equal(t, classScheduler2.Name, class[0].Name)
+	assert.Equal(t, classScheduler2.StartDate.Day(), class[0].Date.Day())
+}
+
+func TestClassesUseCases_CreateClassThreadSafe(t *testing.T) {
 	// Initialize your use case with a mock WriteRepository
 	mockWriteRepo := &MockWriteRepository{}
 	useCase := classesUseCases{
@@ -88,11 +244,5 @@ func TestClassesUseCases_CreateClass(t *testing.T) {
 
 		// Add the date to the map
 		uniqueDates[date] = struct{}{}
-	}
-
-	// Print the array
-	for _, item := range mockWriteRepo.values {
-		t.Log(item.Name)
-		t.Log(item.Date)
 	}
 }

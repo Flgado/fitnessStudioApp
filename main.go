@@ -66,11 +66,13 @@ func main() {
 		log.Fatalf("Impossible to start database pool connections: Error %s", err)
 	}
 
-	uroute := routes.BuildUserRoutes(cfg, dbPoll)
-	croute := routes.BuildClassesRoutes(dbPoll)
+	uRoute := routes.BuildUserRoutes(dbPoll)
+	cRoute := routes.BuildClassesRoutes(dbPoll)
+	rRoute := routes.BuildReservationRoutes(dbPoll)
 
-	router.Mount("/v1/fitnessstudio/users", uroute)
-	router.Mount("/v1/fitnessstudio/classes", croute)
+	router.Mount("/v1/fitnessstudio/users", uRoute)
+	router.Mount("/v1/fitnessstudio/classes", cRoute)
+	router.Mount("/v1/fitnessstudio/bookings", rRoute)
 
 	srv := &http.Server{
 		Handler: router,

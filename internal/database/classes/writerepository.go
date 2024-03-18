@@ -2,16 +2,17 @@ package classes
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
+	"github.com/Flgado/fitnessStudioApp/utils"
 	"github.com/jmoiron/sqlx"
 )
 
 type WriteRepository interface {
 	Add(ctx context.Context, user []api.Class) error
 	Update(ctx context.Context, classId int, classUpdate api.UpdateClass) (int64, error)
-	//AddMultiple(ctx context.Context, users []api.User) error
 }
 
 func NewWriteRepository(db *sqlx.DB) WriteRepository {
@@ -26,8 +27,8 @@ func NewWriteRepository(db *sqlx.DB) WriteRepository {
 // into the database using the NamedExecContext method.
 // It returns nil if the classes are successfully inserted, otherwise, it returns an error.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param classes []api.Class - Slice of api.Class structs representing the classes to be inserted.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: classes []api.Class - Slice of api.Class structs representing the classes to be inserted.
 //
 // @return error - Error if there is an issue inserting the classes into the database.
 func (r *repository) Add(ctx context.Context, classes []api.Class) error {
@@ -46,7 +47,11 @@ func (r *repository) Add(ctx context.Context, classes []api.Class) error {
 	// Execute bulk insert
 	_, err := r.db.NamedExecContext(ctx, AddClassRow, classRows)
 	if err != nil {
-		return err
+		return utils.E(http.StatusInternalServerError,
+			err,
+			map[string]string{"message": "Internal Server Error"},
+			"Something went wrong",
+			"Please contact support team")
 	}
 
 	return nil
@@ -61,16 +66,35 @@ func (r *repository) Add(ctx context.Context, classes []api.Class) error {
 // on the provided update fields, and executes it using the NamedExecContext method.
 // It returns the number of rows affected if the update is successful, otherwise, it returns an error.
 //
-// @param ctx context.Context - Context object for managing the request lifecycle.
-// @param classId int - ID of the class to be updated.
-// @param classUpdate api.UpdateClass - Struct containing the fields to be modified.
+// param: ctx context.Context - Context object for managing the request lifecycle.
+// param: classId int - ID of the class to be updated.
+// param: classUpdate api.UpdateClass - Struct containing the fields to be modified.
 //
 // @return int64 - Number of rows affected by the update operation.
 // @return error - Error if there is an issue updating the class in the database.
 func (r *repository) Update(ctx context.Context, classId int, classUpdate api.UpdateClass) (int64, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
+
+	// Lock the row for the specific class being updated
+	_, err = tx.ExecContext(ctx, "SELECT * FROM classes WHERE id = $1 FOR UPDATE", classId)
+	if err != nil {
+		return 0, err
+	}
+
 	// Fetch existing class data from the database
 	existingClass := ClassRow{}
-	err := r.db.GetContext(ctx, &existingClass, findClassById, classId)
+	err = tx.GetContext(ctx, &existingClass, findClassById, classId)
 
 	// if class does not exist
 	if err != nil {
@@ -84,17 +108,25 @@ func (r *repository) Update(ctx context.Context, classId int, classUpdate api.Up
 	var updateFields []string
 
 	if classUpdate.Name != nil {
-		updateFields = append(updateFields, "class_name=:name")
-		args["name"] = *classUpdate.Name
+		updateFields = append(updateFields, "class_name=:class_name")
+		args["class_name"] = *classUpdate.Name
 	}
 	if classUpdate.Date != nil {
-		updateFields = append(updateFields, "start_date=:start_date")
-		args["start_date"] = *classUpdate.Date
+		updateFields = append(updateFields, "class_date=:class_date")
+		args["class_date"] = *classUpdate.Date
 	}
 
 	if classUpdate.Capacity != nil {
-		updateFields = append(updateFields, "class_capacity=:capacity")
-		args["capacity"] = *classUpdate.Capacity
+		// not possible to update
+		if existingClass.NumRegistrations > *classUpdate.Capacity {
+			return 0, utils.E(http.StatusUnprocessableEntity,
+				nil,
+				map[string]string{"message": "Class capacity reached"},
+				"The class has reached its capacity, unable to update.",
+				"Please try again later or select a different class.")
+		}
+		updateFields = append(updateFields, "class_capacity=:class_capacity")
+		args["class_capacity"] = *classUpdate.Capacity
 	}
 
 	// Check if any fields are to be updated
@@ -107,7 +139,7 @@ func (r *repository) Update(ctx context.Context, classId int, classUpdate api.Up
 	query += " WHERE id=:id"
 
 	// Execute the update query
-	result, err := r.db.NamedExecContext(ctx, query, args)
+	result, err := tx.NamedExecContext(ctx, query, args)
 	if err != nil {
 		return 0, err
 	}

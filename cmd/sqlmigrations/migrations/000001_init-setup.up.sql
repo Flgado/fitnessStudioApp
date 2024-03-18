@@ -49,3 +49,13 @@ CREATE TRIGGER users_last_update_trigger
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_users_last_update_date();
+
+
+
+INSERT INTO classes (class_name, class_date, class_capacity)
+VALUES ('CROSSFIT', '2024-04-15 09:00:00+00', 10);
+
+INSERT INTO users (user_name)
+VALUES ('Joao Folgado'), ('Sergio Folgado');
+
+

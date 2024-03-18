@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"github.com/Flgado/fitnessStudioApp/config"
 	"github.com/Flgado/fitnessStudioApp/handlers"
 	"github.com/Flgado/fitnessStudioApp/internal/database/users"
 	"github.com/Flgado/fitnessStudioApp/internal/usecases"
@@ -9,13 +8,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func BuildUserRoutes(c config.Config, dbPoll *sqlx.DB) *chi.Mux {
+func BuildUserRoutes(dbPoll *sqlx.DB) *chi.Mux {
 	// repository
 	rr := users.NewReadRepository(dbPoll)
 	wr := users.NewWriteRepository(dbPoll)
 
 	// usecases
-	gu := usecases.NewGetAllUserUseCase(rr, wr)
+	gu := usecases.NewUserUseCase(rr, wr)
 
 	// handlers
 	h := handlers.NewUsersHandler(gu)
@@ -23,6 +22,6 @@ func BuildUserRoutes(c config.Config, dbPoll *sqlx.DB) *chi.Mux {
 	uRouter.Get("/", h.HandlerGetUsers)
 	uRouter.Get("/{user-id}", h.HandlerGetUserById)
 	uRouter.Post("/", h.HandlerCreateUser)
-	uRouter.Post("/{user-id}", h.HandlerCreateUser)
+	uRouter.Post("/{user-id}", h.HandlerUpdateUser)
 	return uRouter
 }

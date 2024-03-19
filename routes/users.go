@@ -18,6 +18,8 @@ func BuildUserRoutes(dbPoll *sqlx.DB) *chi.Mux {
 
 	// handlers
 	h := handlers.NewUsersHandler(gu)
+
+	// routes
 	uRouter := chi.NewRouter()
 	uRouter.Get("/", h.HandlerGetUsers)
 	uRouter.Get("/{userId}", h.HandlerGetUserById)

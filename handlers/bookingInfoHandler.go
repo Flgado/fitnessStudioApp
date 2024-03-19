@@ -23,7 +23,7 @@ func NewBookingInfoHandler(uc usecases.BookingUseCase) *BookingInfoHandler {
 // @Tags Bookings
 // @Produce json
 // @Param userId path int true "User ID"
-// @Success 200 {array} []api.ClassBooked
+// @Success 200 {array} []ClassBooked
 // @Failure 400 {object} ErrorResponse
 // @Router /v1/fitnessstudio/bookings/users/{userId}/classes [get]
 func (h BookingInfoHandler) HandlerGetUserClasses(w http.ResponseWriter, r *http.Request) {

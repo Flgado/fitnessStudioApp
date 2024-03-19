@@ -72,6 +72,7 @@ func (r *repository) GetClassReservations(ctx context.Context, classId int) ([]a
 		if err = rows.Scan(&userBookRow.Id, &userBookRow.Name); err != nil {
 			return nil, err
 		}
+
 		// Convert ClassRow to ReadClass
 		readUserBook := api.UsersBooked{
 			ClassId:  classId,

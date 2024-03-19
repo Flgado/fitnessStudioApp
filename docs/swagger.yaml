@@ -1,25 +1,5 @@
 definitions:
-  CreateUser:
-    description: CreateUser
-    properties:
-      name:
-        maxLength: 50
-        type: string
-    required:
-    - name
-    type: object
-  User:
-    description: UserModel
-    properties:
-      id:
-        maximum: 50
-        type: integer
-      name:
-        type: string
-    required:
-    - id
-    type: object
-  api.ClassBooked:
+  ClassBooked:
     properties:
       class_date:
         type: string
@@ -30,7 +10,7 @@ definitions:
       reserved_date:
         type: string
     type: object
-  api.ClassScheduler:
+  ClassScheduler:
     properties:
       capacity:
         type: integer
@@ -46,48 +26,16 @@ definitions:
     - name
     - start_date
     type: object
-  api.MakeBooking:
+  CreateUser:
+    description: CreateUser
     properties:
-      class_id:
-        type: integer
-      user_id:
-        type: integer
-    type: object
-  api.PatchClass:
-    properties:
-      capacity:
-        type: integer
-      date:
-        type: string
-      id:
-        type: integer
       name:
         maxLength: 50
         type: string
+    required:
+    - name
     type: object
-  api.ReadClass:
-    properties:
-      capacity:
-        type: integer
-      date:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      num_registrations:
-        type: integer
-    type: object
-  api.UsersBooked:
-    properties:
-      class_id:
-        type: integer
-      user_id:
-        type: integer
-      user_name:
-        type: string
-    type: object
-  handlers.ErrorResponse:
+  ErrorResponse:
     properties:
       error:
         properties:
@@ -107,6 +55,58 @@ definitions:
             type: string
         type: object
     type: object
+  MakeBooking:
+    properties:
+      class_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  PatchClass:
+    properties:
+      capacity:
+        type: integer
+      date:
+        type: string
+      id:
+        type: integer
+      name:
+        maxLength: 50
+        type: string
+    type: object
+  ReadClass:
+    properties:
+      capacity:
+        type: integer
+      date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      num_registrations:
+        type: integer
+    type: object
+  User:
+    description: UserModel
+    properties:
+      id:
+        type: integer
+      name:
+        maxLength: 50
+        type: string
+    required:
+    - name
+    type: object
+  api.UsersBooked:
+    properties:
+      class_id:
+        type: integer
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -125,7 +125,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.MakeBooking'
+          $ref: '#/definitions/MakeBooking'
       produces:
       - application/json
       responses:
@@ -134,7 +134,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -164,7 +164,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -189,13 +189,13 @@ paths:
           schema:
             items:
               items:
-                $ref: '#/definitions/api.ClassBooked'
+                $ref: '#/definitions/ClassBooked'
               type: array
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Get the list of classes by user
       tags:
       - Bookings
@@ -245,12 +245,12 @@ paths:
           description: Successful operation
           schema:
             items:
-              $ref: '#/definitions/api.ReadClass'
+              $ref: '#/definitions/ReadClass'
             type: array
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -266,7 +266,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/api.PatchClass'
+          $ref: '#/definitions/PatchClass'
       produces:
       - application/json
       responses:
@@ -275,15 +275,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "422":
           description: Unprocessable Entity
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -302,7 +302,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.ClassScheduler'
+          $ref: '#/definitions/ClassScheduler'
       produces:
       - application/json
       responses:
@@ -314,11 +314,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
       summary: Create multiple classes.
       tags:
       - Classes
@@ -337,15 +337,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/api.ReadClass'
+            $ref: '#/definitions/ReadClass'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -387,11 +387,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -417,7 +417,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -443,11 +443,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:

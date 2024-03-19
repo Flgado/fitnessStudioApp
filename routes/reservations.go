@@ -18,9 +18,11 @@ func BuildReservationRoutes(dbPoll *sqlx.DB) *chi.Mux {
 	uc := usecases.NewBookUseCase(readRepo, wrRepo)
 	muc := usecases.NewMakeBookUseCase(readRepo, wrRepo)
 
+	// handlers
 	h := handlers.NewBookingInfoHandler(uc)
 	hm := handlers.NewMakeReservationHandler(muc)
 
+	// routes
 	cRouter := chi.NewRouter()
 	cRouter.Get("/users/{userId}/classes", h.HandlerGetUserClasses)
 	cRouter.Get("/classes/{classId}/users", h.HandlerGetClassUsers)

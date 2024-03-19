@@ -135,8 +135,8 @@ func TestCreateClass_Error(t *testing.T) {
 	mockWriteRepo.AssertExpectations(t)
 	assert.Equal(t, expectedClasses[0].Name, classes[0].Name)
 	compareDates(t, expectedClasses[0].Date, classes[0].Date)
-	// Validate that the sorted classes match the expected values for Name and Date fields
 
+	// Validate that the sorted classes match the expected values for Name and Date fields
 	assert.Equal(t, expectedClasses[1].Name, classes[1].Name)
 	assert.Equal(t, expectedClasses[1].Name, classes[1].Name)
 }

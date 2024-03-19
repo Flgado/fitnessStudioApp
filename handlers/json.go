@@ -16,7 +16,7 @@ type ErrorResponse struct {
 		Path       string            `json:"path"`
 		Suggestion string            `json:"suggestion"`
 	} `json:"error"`
-}
+} // @name ErrorResponse
 
 type ClientReporter interface {
 	error
@@ -31,6 +31,7 @@ func responseWithErrors(w http.ResponseWriter, r http.Request, err error) {
 		status := cr.StatusCode()
 		if status >= http.StatusInternalServerError {
 			responseWithError(w, status, "Something has gone wrong")
+			return
 		}
 
 		errRep := ErrorResponse{
@@ -69,6 +70,7 @@ func responseWithError(w http.ResponseWriter, code int, msg string) {
 		Error: msg,
 	})
 }
+
 func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 	dat, err := json.Marshal(payload)
 	if err != nil {

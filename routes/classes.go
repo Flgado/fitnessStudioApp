@@ -19,6 +19,8 @@ func BuildClassesRoutes(dbPoll *sqlx.DB) *chi.Mux {
 
 	// handler
 	h := handlers.NewClassesHandler(uc)
+
+	// routes
 	cRouter := chi.NewRouter()
 	cRouter.Get("/", h.HandlerGetClasses)
 	cRouter.Get("/{classId}", h.HandlerGetClassById)

@@ -6,9 +6,9 @@ type UsersList struct {
 
 // @Description UserModel
 type User struct {
-	Id   int    `json:"id,omitempty" validate:"required,len=1,max=50"`
-	Name string `json:"name,omitempty"`
-} //@name User model
+	Id   int    `json:"id,omitempty"`
+	Name string `json:"name,omitempty" validate:"required,len=1,max=50"`
+} //@name User
 
 // @Description UpdateUser Information
 type UpdateUser struct {

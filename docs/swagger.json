@@ -27,7 +27,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.MakeBooking"
+                            "$ref": "#/definitions/MakeBooking"
                         }
                     }
                 ],
@@ -38,7 +38,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -85,7 +85,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -124,7 +124,7 @@
                             "items": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/definitions/api.ClassBooked"
+                                    "$ref": "#/definitions/ClassBooked"
                                 }
                             }
                         }
@@ -132,7 +132,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -198,14 +198,14 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.ReadClass"
+                                "$ref": "#/definitions/ReadClass"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -235,7 +235,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.ClassScheduler"
+                            "$ref": "#/definitions/ClassScheduler"
                         }
                     }
                 ],
@@ -249,13 +249,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -275,7 +275,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.PatchClass"
+                            "$ref": "#/definitions/PatchClass"
                         }
                     }
                 ],
@@ -286,19 +286,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Unprocessable Entity",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -332,19 +332,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ReadClass"
+                            "$ref": "#/definitions/ReadClass"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -412,7 +412,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -449,13 +449,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -495,13 +495,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
@@ -515,36 +515,7 @@
         }
     },
     "definitions": {
-        "CreateUser": {
-            "description": "CreateUser",
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 50
-                }
-            }
-        },
-        "User": {
-            "description": "UserModel",
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "maximum": 50
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.ClassBooked": {
+        "ClassBooked": {
             "type": "object",
             "properties": {
                 "class_date": {
@@ -561,7 +532,7 @@
                 }
             }
         },
-        "api.ClassScheduler": {
+        "ClassScheduler": {
             "type": "object",
             "required": [
                 "end_date",
@@ -584,70 +555,20 @@
                 }
             }
         },
-        "api.MakeBooking": {
+        "CreateUser": {
+            "description": "CreateUser",
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
-                "class_id": {
-                    "type": "integer"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "api.PatchClass": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string",
                     "maxLength": 50
                 }
             }
         },
-        "api.ReadClass": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "num_registrations": {
-                    "type": "integer"
-                }
-            }
-        },
-        "api.UsersBooked": {
-            "type": "object",
-            "properties": {
-                "class_id": {
-                    "type": "integer"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "user_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.ErrorResponse": {
+        "ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
@@ -675,6 +596,85 @@
                             "type": "string"
                         }
                     }
+                }
+            }
+        },
+        "MakeBooking": {
+            "type": "object",
+            "properties": {
+                "class_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PatchClass": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "ReadClass": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "num_registrations": {
+                    "type": "integer"
+                }
+            }
+        },
+        "User": {
+            "description": "UserModel",
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "api.UsersBooked": {
+            "type": "object",
+            "properties": {
+                "class_id": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
                 }
             }
         }

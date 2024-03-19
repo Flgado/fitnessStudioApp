@@ -35,7 +35,8 @@ func (h UsersHandler) HandlerGetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	users, err := h.uc.GetAllUsers(ctx)
 	if err != nil {
-		responseWithError(w, 500, err.Error())
+		responseWithErrors(w, *r, err)
+		return
 	}
 	respondWithJson(w, 200, users)
 }

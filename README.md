@@ -1,19 +1,19 @@
 # fitnessStudioApp
 
 ## Descriptions
-This project is a simple REST API designed to enable studio owners to manage their classes through CRUD operations. Users can create accounts and register for classes, taking into account the class capacity and existing reservations.
+This project is a simple REST API designed to enable studio owners to manage their classes. Users can be created and register for classes, taking into account the class capacity and existing reservations.
 
 Key features include:
-- CRUD operations for studio classes
-- CRUD operations for users
+- Operations for studio classes
+- Operations for users
 - User registration and class enrollment functionality
 - Capacity management to handle reservations effectively
 - Unit and integration tests covering all use cases
-- Handling of race conditions and performance optimization (explain in the section Possible race conditions)
+- Handling of race conditions and performance optimization
 
 ## Prerequisites
 
-Before running this project, ensure you have the following dependencies installed:
+Before running this project, ensure you have the following tools installed:
 
 - GO version 1.22.1
 - Docker
@@ -27,7 +27,7 @@ These prerequisites are necessary for building and running the project successfu
 - Note that when Docker stops, all data in the database will be lost. This behavior is intentional. If there's a need to persist data even after Docker is down, please modify the Docker Compose file accordingly.
 - During integration tests, a Docker container with a Postgres database will also be started on port **5432**. Ensure that the database for the application is not running when running these integration tests. Or change the port in the **migration-local.yml** file.
 - To enhance performance and prevent race conditions during class creation, a sync.Map is used, functioning as a cache. This cache blocks goroutines based on a key value (year-month) to prevent multiple goroutines from writing classes for the same day simultaneously. In a real scenario, the key value could be more specific, such as country-studioId-year-month-day. However, note that this cache is in memory, so restarting the server will clear all cached data. Ensure to restart the Docker Compose to reset the cache accordingly.
--  If for some reason when running the go mod tidy the dependencies are not available use the branch XXXX that will have the vendor folder with all dependencies.
+-  If for some reason when running the go mod tidy the dependencies are not available use the branch (https://github.com/Flgado/fitnessStudioApp/tree/vendorFolder) that will have the vendor folder with all dependencies.
 
 ##  How to Start the Application
 
@@ -41,7 +41,7 @@ To run the application, follow these steps:
 ![alt text](image.png)
 
 After starting the application, you can also monitor the database in real-time:
-- Access localhost:5050/browser in your web browser.
+- Access http://localhost:5050/browser in your web browser.
 - Log in using the credentials:
     - Email: admin@gmail.com
     - Password: admin
@@ -57,6 +57,7 @@ After starting the application, you can also monitor the database in real-time:
         - Password: postgres
 
 Images to understand how to do it:
+
 1.º
 
 ![alt text](image-1.png)
@@ -64,6 +65,8 @@ Images to understand how to do it:
 2.º 
 
 ![alt text](image-2.png)
+
+
 3.º
 
 

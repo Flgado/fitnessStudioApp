@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
 	"github.com/Flgado/fitnessStudioApp/internal/usecases"
@@ -43,15 +44,15 @@ func (h UsersHandler) HandlerGetUsers(w http.ResponseWriter, r *http.Request) {
 // @Description Get a user by ID
 // @Tags Users
 // @Produce json
-// @Param user-id path int true "User ID"
+// @Param userId path int true "User ID"
 // @Success 200 {object} User
 // @Failure 404 {object} ErrorResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/fitnessstudio/users/{user-id} [get]
+// @Router /v1/fitnessstudio/users/{userId} [get]
 func (h UsersHandler) HandlerGetUserById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	userIdStr := chi.URLParam(r, "user-id")
+	userIdStr := chi.URLParam(r, "userId")
 	// Convert the userId string to an integer
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
@@ -75,7 +76,7 @@ func (h UsersHandler) HandlerGetUserById(w http.ResponseWriter, r *http.Request)
 }
 
 // HandlerCreateUser handles the HTTP request to create a new user.
-// @Description Create a new user
+// @Description Create a new user.
 // @Tags Users
 // @Produce json
 // @Param request body api.CreateUser true "User data to create"
@@ -97,6 +98,18 @@ func (h UsersHandler) HandlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if user.Name == "" {
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"User name should not be empty",
+			"Use a valid user name")
+
+		responseWithErrors(w, *r, e)
+		return
+	}
+
+	user.Name = strings.TrimSpace(user.Name)
 	err = h.uc.CreateUser(r.Context(), user.Name)
 
 	if err != nil {
@@ -111,30 +124,15 @@ func (h UsersHandler) HandlerCreateUser(w http.ResponseWriter, r *http.Request) 
 // @Description Update a user
 // @Tags Users
 // @Produce json
-// @Param user-id path int true "User ID"
-// @Param request body api.UpdateUser true "User data to update"
+// @Param request body api.User true "User data to update"
 // @Success 200
 // @Failure 404 {object} ErrorResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {string} string "Internal Server Error"
-// @Router /v1/fitnessstudio/users/{user-id} [post]
+// @Router /v1/fitnessstudio/users [patch]
 func (h UsersHandler) HandlerUpdateUser(w http.ResponseWriter, r *http.Request) {
-	userIdStr := chi.URLParam(r, "user-id")
-	// Convert the userId string to an integer
-	userId, err := strconv.Atoi(userIdStr)
-	if err != nil {
-		e := utils.E(http.StatusBadRequest,
-			err,
-			map[string]string{"message": "BadRequest"},
-			"User Id with wrong format",
-			"Read our documentation for more details")
-
-		responseWithErrors(w, *r, e)
-		return
-	}
-
-	var updateUser api.UpdateUser
-	err = json.NewDecoder(r.Body).Decode(&updateUser)
+	user := api.User{}
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		e := utils.E(http.StatusBadRequest,
 			err,
@@ -146,11 +144,17 @@ func (h UsersHandler) HandlerUpdateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user := api.User{
-		Id:   userId,
-		Name: updateUser.Name,
-	}
+	user.Name = strings.TrimSpace(user.Name)
+	if user.Name == "" {
+		e := utils.E(http.StatusBadRequest,
+			err,
+			map[string]string{"message": "BadRequest"},
+			"User name should not be empty",
+			"Use a valid user name")
 
+		responseWithErrors(w, *r, e)
+		return
+	}
 	_, err = h.uc.UpdateUser(r.Context(), user)
 	if err != nil {
 		responseWithErrors(w, *r, err)

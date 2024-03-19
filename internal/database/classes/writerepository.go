@@ -121,8 +121,8 @@ func (r *repository) Update(ctx context.Context, classId int, classUpdate api.Up
 		if existingClass.NumRegistrations > *classUpdate.Capacity {
 			return 0, utils.E(http.StatusUnprocessableEntity,
 				nil,
-				map[string]string{"message": "Class capacity reached"},
-				"The class has reached its capacity, unable to update.",
+				map[string]string{"message": "Cannot update class capacity"},
+				"The class is on full capacity.",
 				"Please try again later or select a different class.")
 		}
 		updateFields = append(updateFields, "class_capacity=:class_capacity")

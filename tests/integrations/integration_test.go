@@ -54,7 +54,7 @@ func cleanupClassesTableDatabase() {
 	resetAutoIncrement()
 }
 
-func cleanulAllTablesDatabase() {
+func cleanupAllTablesDatabase() {
 	_, err := testDbInstance.Exec("DELETE FROM booking")
 	if err != nil {
 		log.Fatalf("Error cleaning up database: %v", err)
@@ -460,11 +460,11 @@ func TestUpdateExistingClassDate(t *testing.T) {
 }
 
 func TestUpdateExisting_NewCapacityLowerThenNumRegistrations(t *testing.T) {
-	defer cleanupClassesTableDatabase()
+	defer cleanupAllTablesDatabase()
 	// Arrange
 	wriRep := classes.NewReadRepository(testDbInstance)
 	readRep := classes.NewWriteRepository(testDbInstance)
-	date := "2024-03-17T12:00:00Z"
+	date := "2024-03-17"
 	testDbInstance.DB.Exec(`INSERT INTO classes (class_name, class_date, class_capacity, num_registrations)
 	VALUES('Test', '` + date + `', 3, 3)`)
 
@@ -473,7 +473,8 @@ func TestUpdateExisting_NewCapacityLowerThenNumRegistrations(t *testing.T) {
 		Capacity: Int(2),
 	}
 
-	expectedDate, err := time.Parse(time.RFC3339, date)
+	layout := "2006-01-02"
+	expectedDate, err := time.Parse(layout, date)
 
 	if err != nil {
 		t.Fatal("Not possible to parse date")
@@ -487,9 +488,10 @@ func TestUpdateExisting_NewCapacityLowerThenNumRegistrations(t *testing.T) {
 
 	expectedError := utils.E(http.StatusUnprocessableEntity,
 		nil,
-		map[string]string{"message": "Class capacity reached"},
-		"The class has reached its capacity, unable to update.",
+		map[string]string{"message": "Cannot update class capacity"},
+		"The class is on full capacity.",
 		"Please try again later or select a different class.")
+
 	expectedClass := api.ReadClass{
 		Id:               1,
 		Class:            class,
@@ -510,12 +512,12 @@ func TestUpdateExisting_NewCapacityLowerThenNumRegistrations(t *testing.T) {
 }
 
 func TestCreateReservation_ClassAlreadyFull(t *testing.T) {
-	defer cleanulAllTablesDatabase()
+	defer cleanupAllTablesDatabase()
 	// Arrange
-	date := "2024-03-17T12:00:00Z"
+	date := "2024-03-17"
 	testDbInstance.DB.Exec(`INSERT INTO classes (class_name, class_date, class_capacity, num_registrations)
 	VALUES('Test', '` + date + `', 3, 3)`)
-	testDbInstance.DB.Exec(`INSERT INTO users (user-name) VALUES('Joao Folgado')`)
+	testDbInstance.DB.Exec(`INSERT INTO users (user_name) VALUES('Joao Folgado')`)
 
 	redRep := booking.NewReadRepository(testDbInstance)
 	wrRep := booking.NewWriteRepository(testDbInstance)
@@ -540,7 +542,7 @@ func TestCreateReservation_ClassAlreadyFull(t *testing.T) {
 }
 
 func TestCreateReservation_ClassAvailable(t *testing.T) {
-	cleanulAllTablesDatabase()
+	cleanupAllTablesDatabase()
 	// Arrange
 	date := "2024-03-17T12:00:00Z"
 	testDbInstance.DB.Exec(`INSERT INTO classes (class_name, class_date, class_capacity, num_registrations)

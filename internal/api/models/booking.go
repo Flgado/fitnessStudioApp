@@ -15,7 +15,7 @@ type UsersBooked struct {
 	UserName string `json:"user_name,omitempty"`
 }
 
-type MakeRegervation struct {
+type MakeBooking struct {
 	ClassId int `json:"class_id,omitempty"`
 	UserId  int `json:"user_id,omitempty"`
 }

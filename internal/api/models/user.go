@@ -1,9 +1,13 @@
 package api
 
+type UsersList struct {
+	Users []User `json:"users,omitempty"`
+}
+
 // @Description UserModel
 type User struct {
-	Id   int
-	Name string
+	Id   int    `json:"id,omitempty" validate:"required,len=1,max=50"`
+	Name string `json:"name,omitempty"`
 } //@name User model
 
 // @Description UpdateUser Information

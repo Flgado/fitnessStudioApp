@@ -30,7 +30,7 @@ func (r *repository) GetUserBookings(ctx context.Context, userId int) ([]api.Cla
 
 	defer rows.Close()
 
-	var bc []api.ClassBooked
+	bc := []api.ClassBooked{}
 
 	for rows.Next() {
 		var classRow ClassBookedRow
@@ -65,7 +65,7 @@ func (r *repository) GetClassReservations(ctx context.Context, classId int) ([]a
 
 	defer rows.Close()
 
-	var ub []api.UsersBooked
+	ub := []api.UsersBooked{}
 
 	for rows.Next() {
 		var userBookRow UserBookedRow

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	api "github.com/Flgado/fitnessStudioApp/internal/api/models"
@@ -24,65 +25,94 @@ import (
 // return api.ClasseFilters - Populated struct containing class filters.
 // return error - Error if any parameter fails to parse.
 func buildClassFilters(urlValues url.Values) (api.ClasseFilters, error) {
+
+	className := strings.TrimSpace(urlValues.Get("className"))
 	filters := api.ClasseFilters{
-		Name: urlValues.Get("class_name"),
+		Name: className,
 	}
 
+	layout := "2006-01-02"
 	// Parse start date greater than or equal to
-	if startDateStr := urlValues.Get("start_date"); startDateStr != "" {
-		startDate, err := time.Parse(time.RFC3339, startDateStr)
+	if startDateStr := urlValues.Get("startDate"); startDateStr != "" {
+		startDate, err := time.Parse(layout, startDateStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "start_date")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "startDate")
 		}
 		filters.StartDateGte = &startDate
 	}
 
 	// Parse end date less than or equal to
-	if endDateStr := urlValues.Get("end_date"); endDateStr != "" {
-		endDate, err := time.Parse(time.RFC3339, endDateStr)
+	if endDateStr := urlValues.Get("endDate"); endDateStr != "" {
+		endDate, err := time.Parse(layout, endDateStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "end_date")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "endDate")
 		}
 		filters.EndDateLe = &endDate
 	}
 
 	// Parse capacity greater than or equal to
-	if capacityGteStr := urlValues.Get("capacity_gte"); capacityGteStr != "" {
+	if capacityGteStr := urlValues.Get("capacityGte"); capacityGteStr != "" {
 		capacityGte, err := strconv.Atoi(capacityGteStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "capacity_gte")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "capacityGte")
 		}
 		filters.CapacityGte = &capacityGte
 	}
 
 	// Parse capacity less than or equal to
-	if capacityLeStr := urlValues.Get("capacity_le"); capacityLeStr != "" {
+	if capacityLeStr := urlValues.Get("capacityLe"); capacityLeStr != "" {
 		capacityLe, err := strconv.Atoi(capacityLeStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "capacity_le")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "capacityLe")
 		}
 		filters.CapacityLe = &capacityLe
 	}
 
 	// Parse number of registrations greater than or equal to
-	if numRegistrationsGteStr := urlValues.Get("num_registrations_gte"); numRegistrationsGteStr != "" {
+	if numRegistrationsGteStr := urlValues.Get("numRegistrationsGte"); numRegistrationsGteStr != "" {
 		numRegistrationsGte, err := strconv.Atoi(numRegistrationsGteStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "num_registrations_gte")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "numRegistrationsGte")
 		}
 		filters.NumRegistrationsGte = &numRegistrationsGte
 	}
 
 	// Parse number of registrations less than or equal to
-	if numRegistrationsLeStr := urlValues.Get("num_registrations_le"); numRegistrationsLeStr != "" {
+	if numRegistrationsLeStr := urlValues.Get("numRegistrationsLe"); numRegistrationsLeStr != "" {
 		numRegistrationsLe, err := strconv.Atoi(numRegistrationsLeStr)
 		if err != nil {
-			return api.ClasseFilters{}, buildFormatParameterError(err, "num_registrations_le")
+			return api.ClasseFilters{}, buildFormatParameterError(err, "numRegistrationsLe")
 		}
 		filters.NumRegistrationsLe = &numRegistrationsLe
 	}
 
 	return filters, nil
+}
+
+func BuildUpdateClass(date *string, name *string, capacity *int) (api.UpdateClass, error) {
+	layout := "2006-01-02"
+	if date != nil {
+		newDate, err := time.Parse(layout, *date)
+		if err != nil {
+			return api.UpdateClass{}, utils.E(http.StatusBadRequest,
+				err,
+				map[string]string{"message": "BadRequest"},
+				"Request body not expected",
+				"Read our documentation for more details")
+		}
+
+		return api.UpdateClass{
+			Name:     name,
+			Date:     &newDate,
+			Capacity: capacity,
+		}, nil
+	}
+
+	return api.UpdateClass{
+		Name:     name,
+		Date:     nil,
+		Capacity: capacity,
+	}, nil
 }
 
 // buildFormatParameterError constructs a formatted error for wrong parameter format.

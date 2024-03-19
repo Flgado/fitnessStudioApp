@@ -98,6 +98,15 @@ func (c *classesUseCases) GetClassById(ctx context.Context, classId int) (api.Re
 // @return []api.Class - Slice of Class structs representing the classes that could not be scheduled.
 // @return error - Error if there is an issue scheduling the classes.
 func (c *classesUseCases) CreateClass(ctx context.Context, classScheduler api.ClassScheduler) ([]api.Class, error) {
+
+	if classScheduler.EndDate.Before(classScheduler.StartDate) {
+		return []api.Class{}, utils.E(http.StatusBadRequest,
+			nil,
+			map[string]string{"message": "BadRequest"},
+			"End Date should be higher or equals then Start Date",
+			"Please select the dates accurately.")
+
+	}
 	sc := separateClassByYearMonth(classScheduler)
 	var notPossibleSchedulerReport []api.Class
 	for key, classList := range sc {

@@ -74,7 +74,7 @@ func (r *repository) List(ctx context.Context, filters api.ClasseFilters) ([]api
 
 	defer rows.Close()
 
-	var classes []api.ReadClass
+	classes := []api.ReadClass{}
 
 	for rows.Next() {
 		var classRow ClassRow

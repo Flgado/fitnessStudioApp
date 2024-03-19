@@ -19,16 +19,55 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/fitnessstudio/bookings/classes/{classId}/users": {
-            "get": {
-                "description": "Returns a list of classes optionally filtered by various parameters. If no filters as pass returns all classes.",
+        "/v1/fitnessstudio/bookings": {
+            "post": {
+                "description": "Booking a class",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get classes booked by user",
+                "parameters": [
+                    {
+                        "description": "Booking body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.MakeBooking"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/fitnessstudio/bookings/classes/{classId}/users": {
+            "get": {
+                "description": "Return the list of users who have booked the class.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get a list of users who have booked the class.",
                 "parameters": [
                     {
                         "type": "integer",
@@ -66,60 +105,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/fitnessstudio/bookings/reserve": {
-            "post": {
-                "description": "Make class reservation",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "parameters": [
-                    {
-                        "description": "Reservation body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api.MakeRegervation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/fitnessstudio/bookings/users/{userId}/classes": {
             "get": {
-                "description": "Returns a list of classes optionally filtered by various parameters. If no filters as pass returns all classes.",
+                "description": "Returns a list of classes booked by user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get classes booked by user",
+                "summary": "Get the list of classes by user",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "user-id",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -160,43 +160,43 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Filter by class name",
-                        "name": "class_name",
+                        "name": "className",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter classes with start date greater than or equal to the specified date. Format: RFC3339",
-                        "name": "start_date",
+                        "description": "Filter classes with start date greater than or equal to the specified date. Format: dddd-dd-dd",
+                        "name": "startDate",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter classes with end date less than or equal to the specified date. Format: RFC3339",
-                        "name": "end_date",
+                        "description": "Filter classes with end date less than or equal to the specified date. Format: dddd-dd-dd",
+                        "name": "endDate",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Filter classes with capacity greater than or equal to the specified value",
-                        "name": "capacity_gte",
+                        "name": "capacityGte",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Filter classes with capacity less than or equal to the specified value",
-                        "name": "capacity_le",
+                        "name": "capacityLe",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Filter classes with number of registrations greater than or equal to the specified value",
-                        "name": "num_registrations_gte",
+                        "name": "numRegistrationsGte",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "Filter classes with number of registrations less than or equal to the specified value",
-                        "name": "num_registrations_le",
+                        "name": "numRegistrationsLe",
                         "in": "query"
                     }
                 ],
@@ -225,7 +225,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Adds new classes with the provided details.",
+                "description": "Creates new classes using the provided details. New classes will be created for each day within the range specified by the start date and end date.\nIf any of these days are unavailable, the endpoint will return the corresponding classes, indicating that scheduling was not possible",
                 "consumes": [
                     "application/json"
                 ],
@@ -238,7 +238,7 @@ const docTemplate = `{
                 "summary": "Create multiple classes.",
                 "parameters": [
                     {
-                        "description": "Class details (all fields are required)",
+                        "description": "Class details (all fields are required, dates in the format YYYY-MM-DD)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -267,54 +267,8 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/fitnessstudio/classes/{class-id}": {
-            "get": {
-                "description": "Get a class by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Classes"
-                ],
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Class ID",
-                        "name": "class-id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/api.ReadClass"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
             },
-            "post": {
+            "patch": {
                 "description": "Update class.",
                 "produces": [
                     "application/json"
@@ -324,19 +278,12 @@ const docTemplate = `{
                 ],
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Class ID",
-                        "name": "class-id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Class data to update",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.UpdateClass"
+                            "$ref": "#/definitions/api.PatchClass"
                         }
                     }
                 ],
@@ -358,6 +305,52 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/fitnessstudio/classes/{classId}": {
+            "get": {
+                "description": "Get a class by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Classes"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Class ID",
+                        "name": "classId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ReadClass"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
@@ -399,7 +392,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user",
+                "description": "Create a new user.",
                 "produces": [
                     "application/json"
                 ],
@@ -437,11 +430,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/fitnessstudio/users/{user-id}": {
-            "get": {
-                "description": "Get a user by ID",
+            },
+            "patch": {
+                "description": "Update a user",
                 "produces": [
                     "application/json"
                 ],
@@ -450,19 +441,18 @@ const docTemplate = `{
                 ],
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "user-id",
-                        "in": "path",
-                        "required": true
+                        "description": "User data to update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/User"
-                        }
+                        "description": "OK"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -483,9 +473,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Update a user",
+            }
+        },
+        "/v1/fitnessstudio/users/{userId}": {
+            "get": {
+                "description": "Get a user by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -496,23 +488,17 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "User ID",
-                        "name": "user-id",
+                        "name": "userId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "User data to update",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/Update"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -550,25 +536,16 @@ const docTemplate = `{
                 }
             }
         },
-        "Update": {
-            "description": "UpdateUser Information",
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 50
-                }
-            }
-        },
         "User": {
             "description": "UserModel",
             "type": "object",
+            "required": [
+                "id"
+            ],
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 50
                 },
                 "name": {
                     "type": "string"
@@ -615,7 +592,7 @@ const docTemplate = `{
                 }
             }
         },
-        "api.MakeRegervation": {
+        "api.MakeBooking": {
             "type": "object",
             "properties": {
                 "class_id": {
@@ -623,6 +600,24 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "api.PatchClass": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
                 }
             }
         },
@@ -643,21 +638,6 @@ const docTemplate = `{
                 },
                 "num_registrations": {
                     "type": "integer"
-                }
-            }
-        },
-        "api.UpdateClass": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 50
                 }
             }
         },

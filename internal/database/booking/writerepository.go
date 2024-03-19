@@ -37,6 +37,20 @@ func (r *repository) Add(ctx context.Context, userId int, classId int) error {
 		return err
 	}
 
+	var userIdValidation int
+	err = tx.QueryRowContext(ctx, "SELECT id FROM users WHERE id = $1", userId).Scan(&userIdValidation)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return utils.E(http.StatusNotFound,
+				nil,
+				map[string]string{"message": "User Not Found"},
+				"The specified user does not exist.",
+				"Please provide a valid user ID.")
+		}
+
+		return err
+	}
+
 	// Check class capacity
 	var numRegistrations, classCapacity int
 	err = tx.QueryRowContext(ctx, "SELECT num_registrations, class_capacity FROM classes WHERE id = $1", classId).Scan(&numRegistrations, &classCapacity)
